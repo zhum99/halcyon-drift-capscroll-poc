@@ -19,13 +19,19 @@ python3 -m http.server 8000
 # open http://localhost:8000/
 ```
 
-Sound starts on your first click/tap/key press (browsers block sound before that), and the **Sound** button in the nav toggles it.
+The curtain page opens on a DOS-style boot terminal. Pressing **[ ENTER ]** launches the page and starts the audio (browsers only allow sound after a click or key press). **Enter without sound** skips the audio; the **Sound** button in the nav toggles it later.
+
+On GitHub Pages it all works as-is, since Pages serves over https.
+
+Preview tip: add `?p=0.5` to the curtain URL to skip the terminal and freeze the sequence at that point.
 
 ## Tweak it
 
 - **Curtain colours / type / spacing:** `curtain/styles/tokens.css` (the only place colours live).
 - **Curtain motion:** knobs at the top of `curtain/scripts/curtain.js`; the `cover` / `lean` / `fall` keyframes in `frame()` choreograph the four stages.
 - **Audio track:** `VIDEO_ID` at the top of `curtain/scripts/audio.js`.
+- **Boot terminal text:** `LINES` in `curtain/scripts/boot.js`.
+- **Chinese / Cyrillic flavour text:** `curtain/scripts/flavour.js` (title line), `TICKER` in `curtain/scripts/curtain.js`, and the second line of each caption in `curtain/index.html`.
 - **Bubbles:** CSS variables at the top of `<style>` and knobs at the top of `<script>` in `bubbles/index.html`.
 
 Audio: “Deep Progressive Techno #11” by Dub Element, embedded via YouTube.

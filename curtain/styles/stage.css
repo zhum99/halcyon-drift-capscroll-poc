@@ -57,14 +57,24 @@
 .title-block .label { margin-bottom: var(--s-3); }
 .title {
   font-size: clamp(52px, 12.5vw, 210px);
-  animation: cut-in 360ms var(--t-cut) 120ms both;
 }
+/* Launch sequence: everything cuts in once the terminal is dismissed
+   (or immediately if there's no JS / no terminal) */
+.js:not(.launched) .nav,
+.js:not(.launched) .frame,
+.js:not(.launched) .window,
+.js:not(.launched) .stage-foot { visibility: hidden; }
+.launched .nav        { animation: cut-in 240ms var(--t-cut) 0ms both; }
+.launched .window     { animation: cut-in 320ms var(--t-cut) 80ms both; }
+.launched .frame      { animation: cut-in 320ms var(--t-cut) 120ms both; }
+.launched .title      { animation: cut-in 360ms var(--t-cut) 360ms both; }
+.launched .stage-foot { animation: cut-in 240ms var(--t-cut) 200ms both; }
 @keyframes cut-in {
   0%   { clip-path: inset(0 100% 0 0); }
   25%  { clip-path: inset(0 60% 40% 0); }
   50%  { clip-path: inset(30% 20% 0 0); }
   75%  { clip-path: inset(0 0 10% 0); }
-  100% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(-200px); } /* open wide so labels outside the box stay visible */
 }
 
 .readout { position: absolute; top: var(--s-6); right: var(--s-6); }
@@ -72,6 +82,10 @@
 .caps { position: absolute; left: var(--s-6); bottom: var(--s-6); width: min(380px, calc(100% - 2 * var(--s-6))); min-height: 64px; }
 .cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: var(--s-2); }
 .cap p { font: 500 var(--fs-small)/1.5 var(--font-body); }
+.cap p.flavour { font-size: var(--fs-micro); font-weight: 700; }
+.cap p.fl-zh { font-family: var(--font-zh); }
+.cap p.fl-ru { font-family: var(--font-ru); }
+.title-block .flavour { margin-top: var(--s-4); }
 .js .cap:not(.is-in) { visibility: hidden; }
 .cap.reveal { transition: clip-path 200ms var(--t-cut); }
 

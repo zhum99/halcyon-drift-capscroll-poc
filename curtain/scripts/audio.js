@@ -1,11 +1,11 @@
 /* =========================================================
    AMBIENT AUDIO — YouTube feed
    Browsers block sound until the visitor interacts with the page
-   (a click, tap or key press — scrolling doesn't count). So the
-   track starts on the FIRST interaction anywhere, and the nav
-   "Sound" button toggles it after that.
-   Note: YouTube embeds don't work from file:// — serve the folder
-   (e.g. `python3 -m http.server`) and open http://localhost:8000/curtain/
+   (a click, tap or key press — scrolling doesn't count). The boot
+   terminal's [ ENTER ] is that interaction: it calls HDAudio.start().
+   The nav "Sound" button toggles it after that.
+   Works on GitHub Pages (https). It does NOT work from file:// —
+   locally, serve the folder (e.g. `python3 -m http.server`).
    ========================================================= */
 (() => {
   const VIDEO_ID = "dZ2NQ-xQINI";   // swap for any embeddable YouTube video id
@@ -16,7 +16,7 @@
   const closeBtn = document.getElementById("audioClose");
   const note = document.getElementById("audioNote");
 
-  let player = null, ready = false, on = false, userChose = false;
+  let player = null, ready = false, on = false;
 
   function render() {
     btn.textContent = on ? "Sound on" : "Sound off";
@@ -48,18 +48,12 @@
     document.head.append(s);
   }
 
-  btn.addEventListener("click", () => { userChose = true; setSound(!on); });
-  closeBtn.addEventListener("click", () => { userChose = true; setSound(false); });
+  btn.addEventListener("click", () => setSound(!on));
+  closeBtn.addEventListener("click", () => setSound(false));
 
-  // First interaction anywhere turns sound on (unless they used the button)
-  const firstTouch = (e) => {
-    removeEventListener("pointerdown", firstTouch);
-    removeEventListener("keydown", firstTouch);
-    if (userChose || btn.contains(e.target) || panel.contains(e.target)) return;
-    setSound(true);
-  };
-  addEventListener("pointerdown", firstTouch);
-  addEventListener("keydown", firstTouch);
+  // Called by the boot terminal's [ ENTER ] — that click/keypress is the
+  // interaction browsers require before they allow sound.
+  window.HDAudio = { start: () => setSound(true) };
 
   render();
 })();

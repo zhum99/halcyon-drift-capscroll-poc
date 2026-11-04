@@ -29,8 +29,25 @@ const smooth = t => t * t * (3 - 2 * t);
 const { sin, cos } = Math;
 
 /* ---- Ticker ---- */
-const words = ["Curtain drawing", "NODE 07 · online", "VISC 0.81", "Do not engage",
-  "UNIT 7C-AX", "REV.04.11", "Mass descending", "34.0522N 118.2437W"].map(t => `<span>⊕ ${t}</span>`).join("");
+// Flavour items alternate Chinese / Cyrillic, with neutral serials between
+const TICKER = [
+  ["zh-Hans", "幕布正在拉开"],          // curtain drawing open
+  ["ru",      "Занавес опускается"],    // curtain descending
+  ["",        "UNIT 7C-AX"],
+  ["zh-Hans", "黏度 0.81"],              // viscosity 0.81
+  ["ru",      "Вязкость 0.81"],         // viscosity 0.81
+  ["",        "REV.04.11"],
+  ["zh-Hans", "物质正在下沉"],          // mass descending
+  ["ru",      "Масса снижается"],       // mass descending
+  ["",        "34.0522N 118.2437W"],
+  ["zh-Hans", "请勿接触"],              // do not touch
+  ["ru",      "Не вступать в контакт"], // do not engage
+  ["",        "NODE 07 · ONLINE"],
+];
+const words = TICKER.map(([lang, t]) => {
+  const cls = lang === "ru" ? "fl-ru" : lang ? "fl-zh" : "";
+  return `<span${lang ? ` lang="${lang}" class="${cls}"` : ""}>⊕ ${t}</span>`;
+}).join("");
 document.getElementById("ticker").innerHTML = words + words;
 
 /* ---- Build the mask shapes ---- */

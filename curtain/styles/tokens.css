@@ -28,9 +28,16 @@
   --mask-off:  #000000;
   --mask-on:   #FFFFFF;
 
+  /* Monitor scanline stripe (void at low opacity) */
+  --scan:      rgb(11 11 12 / 0.14);
+  --scan-dark: rgb(237 237 232 / 0.07); /* paper stripes, for dark monitors */
+
   /* Type */
   --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif; /* system Helvetica; Arial elsewhere */
   --font-body:    "Inter", "Helvetica Neue", Arial, sans-serif;
+  /* Flavour text — alternates Chinese and Cyrillic */
+  --font-zh:      "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --font-ru:      "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-mono:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
 
   --fs-micro: 0.625rem;

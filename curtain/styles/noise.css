@@ -12,3 +12,17 @@
 .reg i { position: absolute; inset: 3px; border: 1px solid currentColor; border-radius: 50%; } /* ⊕ ring */
 
 .micro { font: 400 var(--fs-micro)/1.6 var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; text-align: right; }
+
+/* Scanlines — ONLY for "monitor" surfaces (boot terminal, curtain window).
+   Hard-stop stripes, no blur. Use .scanlines on an element, or drop a
+   .scanlines-layer div inside a positioned container. */
+.scanlines { position: relative; }
+.scanlines::after, .scanlines-layer {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 5;
+  background: repeating-linear-gradient(0deg, var(--scan) 0 1px, transparent 1px 3px);
+}
+
+/* Flavour text — Chinese (sans) and Cyrillic, alternated across the page */
+.fl-zh { font-family: var(--font-zh); font-weight: 700; letter-spacing: 0.08em; }
+.fl-ru { font-family: var(--font-ru); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.flavour { font-size: var(--fs-micro); line-height: 1.6; }
