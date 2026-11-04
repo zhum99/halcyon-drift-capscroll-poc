@@ -1,0 +1,14 @@
+/* =========================================================
+   NOISE KIT — barcodes, registration marks, micro-copy (§6)
+   ========================================================= */
+.barcode { width: 120px; height: 32px; background: repeating-linear-gradient(90deg,
+  var(--fg) 0 2px, transparent 2px 4px, var(--fg) 4px 5px, transparent 5px 8px,
+  var(--fg) 8px 11px, transparent 11px 13px); }
+
+.reg { position: absolute; width: 14px; height: 14px; }
+.reg::before, .reg::after { content: ""; position: absolute; background: currentColor; }
+.reg::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+.reg::after  { top: 50%; left: 0; right: 0; height: 1px; }
+.reg i { position: absolute; inset: 3px; border: 1px solid currentColor; border-radius: 50%; } /* ⊕ ring */
+
+.micro { font: 400 var(--fs-micro)/1.6 var(--font-mono); text-transform: uppercase; letter-spacing: 0.12em; text-align: right; }

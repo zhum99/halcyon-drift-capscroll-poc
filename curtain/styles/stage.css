@@ -1,0 +1,105 @@
+/* =========================================================
+   STAGE — the captive scroll "window"
+   The window is drawn as a black/white MASK, then coloured:
+     .goo    white blobs on black; blur + contrast melts them into
+             one hard-edged, flat shape (the output has no blur or glow)
+     .ink    white type, "difference" blend → inverts over blobs
+     .tint   --accent with "screen"   → black becomes volt
+     .paper  --fg with "multiply"     → white becomes paper (not pure #FFF)
+   ========================================================= */
+.sequence { position: relative; height: 600vh; }
+.stage {
+  position: sticky; top: 0;
+  height: 100vh; height: 100svh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* Frame: the window sits inside the void surround */
+.window, .frame {
+  position: absolute;
+  top: calc(var(--nav-h) + var(--s-6));
+  left: var(--gutter); right: var(--gutter);
+  bottom: calc(12px + 28px + var(--s-6)); /* livery + ticker + gap */
+}
+.window { overflow: hidden; isolation: isolate; background: var(--mask-off); }
+.frame { pointer-events: none; border: var(--rule); z-index: 2; }
+.frame::before, .frame::after { content: ""; position: absolute; width: 10px; height: 10px; border: 2px solid var(--fg); }
+.frame::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; }
+.frame::after  { bottom: -6px; right: -6px; border-left: 0; border-top: 0; }
+.frame-label { position: absolute; top: -20px; left: 0; color: var(--muted); }
+.frame-label-r { position: absolute; top: -20px; right: 0; color: var(--muted); }
+
+.stage-foot { position: absolute; left: 0; right: 0; bottom: 0; }
+.stage-foot .livery { margin: 0 var(--gutter) var(--s-6); }
+
+.goo { position: absolute; inset: 0; background: var(--mask-off); filter: contrast(28); }
+.goo-blur { position: absolute; inset: 0; filter: blur(18px); }
+.goo .b {
+  position: absolute; left: 0; top: 0; width: 100px; height: 100px;
+  border-radius: 50%; background: var(--mask-on); will-change: transform;
+}
+.goo .curtain {
+  position: absolute; left: 0; top: 0; background: var(--mask-on);
+  transform-origin: 0 0; border-top-left-radius: 45vmin; will-change: transform;
+}
+.ink   { position: absolute; inset: 0; mix-blend-mode: difference; color: var(--mask-on); pointer-events: none; }
+.tint  { position: absolute; inset: 0; background: var(--accent); mix-blend-mode: screen; pointer-events: none; }
+.paper { position: absolute; inset: 0; background: var(--fg); mix-blend-mode: multiply; pointer-events: none; }
+
+/* ---------- Ink layer (everything uses --mask-on; it is recoloured by the blend) ---------- */
+.ink .label { color: var(--mask-on); }
+.ink .tag { background: var(--mask-on); color: var(--mask-off); }
+.ink .numeral { -webkit-text-stroke-color: var(--mask-on); }
+.ink .reg { color: var(--mask-on); }
+
+.title-block { position: absolute; left: var(--s-6); top: 12%; }
+.title-block .label { margin-bottom: var(--s-3); }
+.title {
+  font-size: clamp(52px, 12.5vw, 210px);
+  animation: cut-in 360ms var(--t-cut) 120ms both;
+}
+@keyframes cut-in {
+  0%   { clip-path: inset(0 100% 0 0); }
+  25%  { clip-path: inset(0 60% 40% 0); }
+  50%  { clip-path: inset(30% 20% 0 0); }
+  75%  { clip-path: inset(0 0 10% 0); }
+  100% { clip-path: inset(0 0 0 0); }
+}
+
+.readout { position: absolute; top: var(--s-6); right: var(--s-6); }
+
+.caps { position: absolute; left: var(--s-6); bottom: var(--s-6); width: min(380px, calc(100% - 2 * var(--s-6))); min-height: 64px; }
+.cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: var(--s-2); }
+.cap p { font: 500 var(--fs-small)/1.5 var(--font-body); }
+.js .cap:not(.is-in) { visibility: hidden; }
+.cap.reveal { transition: clip-path 200ms var(--t-cut); }
+
+.stage-num { position: absolute; right: var(--s-6); bottom: var(--s-4); font-size: clamp(64px, 12vw, 180px); }
+
+.reg.tl { top: var(--s-3); left: var(--s-3); }
+.reg.tr { top: var(--s-3); right: var(--s-3); }
+
+/* ---------- Audio feed panel ---------- */
+.audio {
+  position: fixed; right: var(--gutter); bottom: calc(12px + 28px + var(--s-6) + var(--s-4));
+  z-index: 30; width: 216px;
+  border: var(--rule); background: var(--c-void); color: var(--c-paper);
+  box-shadow: 6px 6px 0 var(--accent);
+  transform: translateX(calc(100% + var(--gutter) + 12px));
+  transition: transform 200ms var(--t-cut);
+}
+.audio.is-open { transform: none; }
+.audio-head { display: flex; justify-content: space-between; align-items: center; padding: var(--s-2); border-bottom: var(--rule); }
+.audio-head .label { color: var(--c-paper); }
+.audio-close { background: none; border: 0; color: var(--c-paper); font: 700 var(--fs-micro)/1 var(--font-mono); cursor: pointer; padding: var(--s-1); }
+.audio-player { width: 200px; height: 200px; margin: var(--s-2); background: var(--c-graphite); }
+.audio-player iframe { display: block; width: 200px; height: 200px; }
+.audio-foot { padding: 0 var(--s-2) var(--s-2); }
+
+@media (max-width: 600px) {
+  .title-block { left: var(--s-4); top: 8%; }
+  .readout, .reg.tr { display: none; }
+  .caps { left: var(--s-4); bottom: var(--s-4); }
+  .stage-num { bottom: auto; top: var(--s-4); right: var(--s-4); }
+}

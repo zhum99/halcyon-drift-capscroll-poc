@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halcyon Drift — Curtain</title>
+<meta name="description" content="Captive scroll sequence: a paper-white lava curtain draws across a volt window. Graphic Realism style study.">
+<script>document.documentElement.classList.replace("no-js", "js");</script>
+
+<!-- Display type is system Helvetica (see tokens.css); only body + mono are loaded -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/components.css">
+<link rel="stylesheet" href="styles/noise.css">
+<link rel="stylesheet" href="styles/stage.css">
+
+<script src="scripts/clock.js" defer></script>
+<script src="scripts/curtain.js" defer></script>
+<script src="scripts/audio.js" defer></script>
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<header class="nav">
+  <a class="mark" href="#top" aria-label="Halcyon Drift — back to top">
+    <!-- Invented mark: square frame + ⊕ -->
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+      <rect x="1" y="1" width="18" height="18"/><circle cx="10" cy="10" r="4"/><path d="M10 1v18M1 10h18"/>
+    </svg>
+    <b>HALCYON/DRIFT</b>
+  </a>
+  <ul class="nav-links">
+    <li><a href="../bubbles/">01 Bubbles</a></li>
+    <li><a href="./" aria-current="page">02 Curtain</a></li>
+  </ul>
+  <div class="nav-readout label">NODE 07 · <b>ONLINE</b><br><span data-clock>T+00:00:00</span></div>
+  <button class="btn btn--sm" id="soundBtn" type="button" aria-pressed="false">Sound off</button>
+  <span class="nav-progress" id="navProgress"></span>
+</header>
+
+<!-- ================= CAPTIVE SEQUENCE ================= -->
+<main id="top">
+<section class="sequence" id="sequence" aria-label="Curtain sequence">
+  <div class="stage">
+    <div class="window">
+      <div class="goo" aria-hidden="true"><div class="goo-blur" id="goo"></div></div>
+
+      <div class="ink">
+        <span class="reg tl"><i></i></span><span class="reg tr"><i></i></span>
+
+        <div class="title-block">
+          <p class="label">SEC.02 // CURTAIN // REV 1.1</p>
+          <h1 class="title">Halcyon<br>Drift</h1>
+        </div>
+
+        <div class="readout micro" id="readout">COVER 000%<br>DESCENT 000%<br>VISC 0.81</div>
+
+        <!-- Captions: one per stage. data-at = where in the sequence (0 → 1) it belongs -->
+        <div class="caps">
+          <div class="cap reveal is-in" data-at="0"><span><span class="tag">STG 01 // Signal</span></span><p>Something is gathering at the edge of the frame.</p></div>
+          <div class="cap reveal" data-at="0.333"><span><span class="tag">STG 02 // Draw</span></span><p>The curtain draws itself across. It does not ask.</p></div>
+          <div class="cap reveal" data-at="0.666"><span><span class="tag">STG 03 // Flood</span></span><p>Total coverage. Signal lost in white.</p></div>
+          <div class="cap reveal" data-at="1"><span><span class="tag">STG 04 // Fall</span></span><p>Gravity returns. The mass slides away to the left.</p></div>
+        </div>
+
+        <div class="numeral stage-num" id="stageNum" aria-hidden="true">01</div>
+      </div>
+
+      <div class="tint"></div>
+      <div class="paper"></div>
+    </div>
+
+    <div class="frame" aria-hidden="true">
+      <span class="frame-label label">WIN-07 // VOLT FIELD</span>
+      <span class="frame-label-r label" id="seqCounter">SEQ 01/04</span>
+    </div>
+
+    <div class="stage-foot" aria-hidden="true">
+      <div class="livery"></div>
+      <div class="ticker"><div class="ticker-track" id="ticker"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= OUTRO (light variant) ================= -->
+<section class="outro theme-light">
+  <div class="outro-inner">
+    <p class="label">SEC.03 // END // MK-0417/B</p>
+    <h2 class="outro-title">End of<br>sequence.</h2>
+
+    <div class="grid outro-cards">
+      <article class="card">
+        <div class="card-head"><span class="label">REF.01</span><span class="tag">Study</span></div>
+        <h3>Halcyon Drift</h3>
+        <p>Curtain variant. A captive scroll study in flat volt and paper.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">REF.02</span><span class="tag">Palette</span></div>
+        <h3>Volt / Acid</h3>
+        <p>Neutral void and paper, volt primary, acid secondary.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">REF.03</span><span class="tag">Audio</span></div>
+        <h3>Ambient feed</h3>
+        <p>“Deep Progressive Techno #11” by Dub Element, streamed from YouTube.</p>
+      </article>
+      <article class="card">
+        <div class="card-head"><span class="label">REF.04</span><span class="tag">Notice</span></div>
+        <h3>Fan study</h3>
+        <p>Style exercise. Not affiliated with any studio. All marks invented.</p>
+      </article>
+    </div>
+
+    <div class="outro-actions">
+      <a class="btn" href="#top">↑ Replay</a>
+      <a class="btn btn--ghost" href="../bubbles/">01 // Bubbles</a>
+      <div class="barcode" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ================= AUDIO FEED =================
+     YouTube's terms require the player to stay visible (min 200×200) while it plays,
+     so the feed is a small panel rather than a hidden player. -->
+<aside class="audio" id="audio" aria-label="Audio feed">
+  <div class="audio-head">
+    <span class="label">AUDIO FEED // CH.07</span>
+    <button class="audio-close" id="audioClose" type="button" aria-label="Turn sound off">✕</button>
+  </div>
+  <div class="audio-player"><div id="yt"></div></div>
+  <p class="audio-foot label" id="audioNote">Dub Element — Deep Progressive Techno #11</p>
+</aside>
+
+<style>
+/* Outro layout (page-specific) */
+.outro { border-top: var(--rule-heavy); padding: calc(var(--nav-h) + var(--s-16)) var(--gutter) var(--s-16); min-height: 100vh; }
+.outro-inner { display: grid; gap: var(--s-8); }
+.outro-title { font-size: var(--fs-h1); }
+.outro-cards > * { grid-column: span 12; }
+@media (min-width: 640px)  { .outro-cards > * { grid-column: span 6; } }
+@media (min-width: 1024px) { .outro-cards > * { grid-column: span 3; } }
+.outro-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-6); border-top: var(--rule); padding-top: var(--s-6); }
+.outro-actions .barcode { margin-left: auto; }
+.card p { font-size: var(--fs-small); max-width: 64ch; }
+</style>
+</body>
+</html>

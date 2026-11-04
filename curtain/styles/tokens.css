@@ -1,0 +1,70 @@
+/* =========================================================
+   TOKENS — the only place colours live (style guide §2)
+   ========================================================= */
+:root {
+  /* Neutrals */
+  --c-paper:   #EDEDE8;
+  --c-bone:    #D9D9D2;
+  --c-steel:   #8A8C8E;
+  --c-graphite:#2A2B2D;
+  --c-void:    #0B0B0C;
+
+  /* Accents — this page uses volt (primary) + acid (secondary) */
+  --c-acid:    #C6FF00;
+  --c-volt:    #FF2D8A;
+
+  /* Role mapping (dark variant: the curtain stage sits on void) */
+  --bg:        var(--c-void);
+  --fg:        var(--c-paper);
+  --muted:     var(--c-steel);
+  --surface:   var(--c-graphite);
+  --accent:    var(--c-volt);
+  --accent-2:  var(--c-acid);
+  --on-accent: var(--c-void);
+
+  /* Blend-mask channels for the curtain window. These are NOT visible
+     colours: the window is drawn as a black/white mask, then tinted
+     with --accent (screen) and --fg (multiply) — see stage.css. */
+  --mask-off:  #000000;
+  --mask-on:   #FFFFFF;
+
+  /* Type */
+  --font-display: "Helvetica Neue", Helvetica, Arial, sans-serif; /* system Helvetica; Arial elsewhere */
+  --font-body:    "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "JetBrains Mono", "IBM Plex Mono", ui-monospace, monospace;
+
+  --fs-micro: 0.625rem;
+  --fs-small: 0.8125rem;
+  --fs-body:  1rem;
+  --fs-h3:    clamp(1.25rem, 2vw, 1.75rem);
+  --fs-h2:    clamp(2rem, 5vw, 4rem);
+  --fs-h1:    clamp(3rem, 11vw, 10rem);
+
+  /* Spacing — 4px grid */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-6: 24px; --s-8: 32px; --s-12: 48px; --s-16: 64px; --s-24: 96px;
+  --gutter: var(--s-4);
+
+  /* Lines & shadows */
+  --rule:        1px solid var(--fg);
+  --rule-heavy:  4px solid var(--fg);
+  --shadow-hard: 6px 6px 0 var(--fg);
+  --radius: 0;
+
+  /* Motion */
+  --t-snap: 120ms;
+  --t-cut:  steps(4, end);
+  --ease:   cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --nav-h: 52px;
+}
+@media (min-width: 768px) { :root { --gutter: var(--s-8); } }
+
+/* Light variant for the outro */
+.theme-light {
+  --bg: var(--c-paper);
+  --fg: var(--c-void);
+  --surface: var(--c-bone);
+  --muted: #5E6062; /* steel darkened for 4.5:1 on paper */
+}

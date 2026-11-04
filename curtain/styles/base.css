@@ -1,0 +1,47 @@
+/* =========================================================
+   BASE — reset, type, grid (style guide §3, §4)
+   ========================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; border-radius: var(--radius); }
+html { background: var(--bg); }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+
+h1, h2 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.85;
+}
+h3 { font-family: var(--font-display); font-weight: 800; font-size: var(--fs-h3); text-transform: uppercase; line-height: 1; }
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: var(--s-4); }
+
+:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 3px; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .reveal { clip-path: none; }
+}
