@@ -59,6 +59,33 @@ const folds = Array.from({ length: FOLDS }, () => shape());
 const lumps = Array.from({ length: 8 }, () => shape());
 const drips = Array.from({ length: DRIPS }, () => ({ el: shape(), s: [rand(), rand(), rand(), rand()] }));
 
+/* ---- Planet system (the bubbles-page motif) ----
+   Lives in the ink layer, so it shows white on volt and volt on the curtain. */
+const NS = "http://www.w3.org/2000/svg";
+const planetsSvg = document.getElementById("planets");
+const svgEl = (tag, attrs) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  planetsSvg.append(e);
+  return e;
+};
+const orbit  = svgEl("circle",  { fill: "none", stroke: "currentColor", "stroke-width": 1.5, "stroke-dasharray": "2 6" });
+const planet = svgEl("circle",  { fill: "currentColor" });
+const ring   = svgEl("ellipse", { fill: "none", stroke: "currentColor", "stroke-width": 2 });
+const SATS = 12;
+const sats = Array.from({ length: SATS }, (_, i) => {
+  const type = i % 4;                       // 0 filled · 1 outline · 2 filled + number · 3 dashed
+  const filled = type === 0 || type === 2;
+  const c = svgEl("circle", {
+    fill: filled ? "currentColor" : "none", stroke: "currentColor",
+    "stroke-width": filled ? 0 : 2, ...(type === 3 ? { "stroke-dasharray": "3 5" } : {}),
+  });
+  const label = type === 2 ? svgEl("text", {}) : null;
+  if (label) label.style.fill = "var(--mask-off)";
+  if (label) label.textContent = String(i * 3 + 1).padStart(2, "0");
+  return { c, label, s: [rand(), rand(), rand()] };
+});
+
 function place(el, x, y, rx, ry = rx) {
   el.style.transform = `translate(${x - 50}px, ${y - 50}px) scale(${rx / 50}, ${ry / 50})`;
 }
@@ -135,6 +162,36 @@ function frame(now) {
     const y = lerp(y0, y0 + H * (0.3 + 0.45 * c), u * u) + cos(t * 0.7 + i * 1.9) * VMIN * 1.2;
     const r = Rm * smooth(clamp(u / 0.12)) * clamp(live - i) * (0.85 + 0.15 * sin(t * 1.1 + i * 3));
     place(d.el, x, y, r * (1 - 0.12 * u), r * (1 + 0.3 * u));
+  });
+
+  /* Planets: orbit near the curtain edge, swell through Draw and Flood,
+     then collapse to a full stop as the satellites burst outward on Fall */
+  const S4 = [0, 1/3, 2/3, 1];
+  const k4 = vals => keyed(p, S4.map((s, i) => [s, vals[i]]));
+  const pcx = W * k4([0.7, 0.66, 0.62, 0.5]);
+  const pcy = H * k4([0.44, 0.5, 0.5, 0.5]);
+  const pr  = VMIN * k4([5, 9, 15, 1.4]);
+  const orbitR = VMIN * k4([20, 28, 36, 36]);
+  const burst = fall;                              // 0 → 1 on the last stage
+  planet.setAttribute("cx", pcx); planet.setAttribute("cy", pcy); planet.setAttribute("r", pr);
+  ring.setAttribute("cx", pcx); ring.setAttribute("cy", pcy);
+  ring.setAttribute("rx", pr * 2.1); ring.setAttribute("ry", pr * 0.45);
+  ring.setAttribute("transform", `rotate(-18 ${pcx} ${pcy})`);
+  ring.style.opacity = 1 - burst;
+  orbit.setAttribute("cx", pcx); orbit.setAttribute("cy", pcy); orbit.setAttribute("r", orbitR);
+  orbit.style.opacity = 1 - burst;
+  const diag = Math.hypot(W, H);
+  sats.forEach(({ c, label, s: [, b, sz] }, i) => {
+    const ang = (i / SATS) * Math.PI * 2 + t * 0.12 + p * Math.PI * 2;
+    const R = lerp(orbitR, diag * (0.35 + 0.35 * b), burst);
+    const r = VMIN * (1.2 + 2 * sz) * k4([1, 1.3, 1.5, 3.5]);
+    const x = pcx + Math.cos(ang) * R, y = pcy + Math.sin(ang) * R * 0.92;
+    c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
+    if (label) {
+      label.setAttribute("x", x); label.setAttribute("y", y);
+      label.style.fontSize = Math.max(8, r * 0.7) + "px";
+      label.style.opacity = r > 14 ? 1 : 0;
+    }
   });
 
   /* HUD — captions switch as hard cuts, not fades */

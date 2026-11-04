@@ -5,7 +5,9 @@ Two static, single-page proofs of concept for a captive (sticky) scroll sequence
 | Folder | What it is |
 |---|---|
 | [`bubbles/`](bubbles/) | White abstract bubbles on neon red: scatter → orbit → halftone matrix → one body → release. Single self-contained HTML file. |
-| [`curtain/`](curtain/) | A paper-white lava-lamp curtain draws across a volt window, floods it, then falls away. Follows [`graphic-realism-style-guide.md`](graphic-realism-style-guide.md); includes an ambient YouTube audio feed. |
+| [`curtain/`](curtain/) | Opens on a DOS boot terminal; [ ENTER ] expands a planet-like reveal into a full-screen volt field where a paper-white lava-lamp curtain draws across, floods it, then falls away, with an orbiting planet system on top. Follows [`graphic-realism-style-guide.md`](graphic-realism-style-guide.md); includes an ambient YouTube audio feed. |
+
+**Live:** https://zhum99.github.io/halcyon-drift-capscroll-poc/
 
 ## Run it
 

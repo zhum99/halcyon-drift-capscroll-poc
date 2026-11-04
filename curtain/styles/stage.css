@@ -15,23 +15,22 @@
   background: var(--bg);
 }
 
-/* Frame: the window sits inside the void surround */
-.window, .frame {
-  position: absolute;
-  top: calc(var(--nav-h) + var(--s-6));
-  left: var(--gutter); right: var(--gutter);
-  bottom: calc(12px + 28px + var(--s-6)); /* livery + ticker + gap */
+/* The window is full-bleed: the whole screen under the nav is the coloured field.
+   (Deliberate exception to the style guide's neutral-surround rule.) */
+.window {
+  position: absolute; top: var(--nav-h); left: 0; right: 0; bottom: 0;
+  overflow: hidden; isolation: isolate; background: var(--mask-off);
 }
-.window { overflow: hidden; isolation: isolate; background: var(--mask-off); }
-.frame { pointer-events: none; border: var(--rule); z-index: 2; }
-.frame::before, .frame::after { content: ""; position: absolute; width: 10px; height: 10px; border: 2px solid var(--fg); }
-.frame::before { top: -6px; left: -6px; border-right: 0; border-bottom: 0; }
-.frame::after  { bottom: -6px; right: -6px; border-left: 0; border-top: 0; }
-.frame-label { position: absolute; top: -20px; left: 0; color: var(--muted); }
-.frame-label-r { position: absolute; top: -20px; right: 0; color: var(--muted); }
+.stage { --foot-h: 40px; } /* livery (12) + ticker (28) overlaid on the window's bottom edge */
+.stage-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; }
 
-.stage-foot { position: absolute; left: 0; right: 0; bottom: 0; }
-.stage-foot .livery { margin: 0 var(--gutter) var(--s-6); }
+/* Window labels now live inside the field (top corners) */
+.win-label { position: absolute; top: var(--s-3); left: calc(var(--s-3) + 24px); }
+.win-label-r { position: absolute; top: var(--s-3); right: calc(var(--s-3) + 24px); }
+
+/* Planet system (orbits, satellites) — drawn in the ink layer so it inverts over the curtain */
+#planets { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+#planets text { font: 700 10px var(--font-mono); letter-spacing: 0.08em; text-anchor: middle; dominant-baseline: central; }
 
 .goo { position: absolute; inset: 0; background: var(--mask-off); filter: contrast(28); }
 .goo-blur { position: absolute; inset: 0; filter: blur(18px); }
@@ -61,14 +60,10 @@
 /* Launch sequence: everything cuts in once the terminal is dismissed
    (or immediately if there's no JS / no terminal) */
 .js:not(.launched) .nav,
-.js:not(.launched) .frame,
 .js:not(.launched) .window,
 .js:not(.launched) .stage-foot { visibility: hidden; }
 .launched .nav        { animation: cut-in 240ms var(--t-cut) 0ms both; }
-.launched .window     { animation: cut-in 320ms var(--t-cut) 80ms both; }
-.launched .frame      { animation: cut-in 320ms var(--t-cut) 120ms both; }
 .launched .title      { animation: cut-in 360ms var(--t-cut) 360ms both; }
-.launched .stage-foot { animation: cut-in 240ms var(--t-cut) 200ms both; }
 @keyframes cut-in {
   0%   { clip-path: inset(0 100% 0 0); }
   25%  { clip-path: inset(0 60% 40% 0); }
@@ -77,9 +72,9 @@
   100% { clip-path: inset(-200px); } /* open wide so labels outside the box stay visible */
 }
 
-.readout { position: absolute; top: var(--s-6); right: var(--s-6); }
+.readout { position: absolute; top: calc(var(--s-3) + 24px); right: var(--s-6); }
 
-.caps { position: absolute; left: var(--s-6); bottom: var(--s-6); width: min(380px, calc(100% - 2 * var(--s-6))); min-height: 64px; }
+.caps { position: absolute; left: var(--s-6); bottom: calc(var(--foot-h) + var(--s-6)); width: min(380px, calc(100% - 2 * var(--s-6))); min-height: 64px; }
 .cap { position: absolute; left: 0; right: 0; bottom: 0; display: grid; gap: var(--s-2); }
 .cap p { font: 500 var(--fs-small)/1.5 var(--font-body); }
 .cap p.flavour { font-size: var(--fs-micro); font-weight: 700; }
@@ -89,7 +84,7 @@
 .js .cap:not(.is-in) { visibility: hidden; }
 .cap.reveal { transition: clip-path 200ms var(--t-cut); }
 
-.stage-num { position: absolute; right: var(--s-6); bottom: var(--s-4); font-size: clamp(64px, 12vw, 180px); }
+.stage-num { position: absolute; right: var(--s-6); bottom: calc(var(--foot-h) + var(--s-4)); font-size: clamp(64px, 12vw, 180px); }
 
 .reg.tl { top: var(--s-3); left: var(--s-3); }
 .reg.tr { top: var(--s-3); right: var(--s-3); }
@@ -114,6 +109,7 @@
 @media (max-width: 600px) {
   .title-block { left: var(--s-4); top: 8%; }
   .readout, .reg.tr { display: none; }
-  .caps { left: var(--s-4); bottom: var(--s-4); }
-  .stage-num { bottom: auto; top: var(--s-4); right: var(--s-4); }
+  .caps { left: var(--s-4); bottom: calc(var(--foot-h) + var(--s-4)); }
+  .stage-num { bottom: auto; top: calc(var(--s-3) + 24px); right: var(--s-4); }
+  .win-label-r { display: none; }
 }
