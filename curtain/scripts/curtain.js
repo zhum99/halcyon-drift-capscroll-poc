@@ -2,6 +2,8 @@
    CURTAIN SEQUENCE
    Scroll position (0 → 1 through .sequence) drives four stages:
    01 Signal · 02 Draw · 03 Flood · 04 Fall
+   Behind the curtain sits a 3D wireframe solar system seen through
+   a moving camera, so everything has real depth parallax.
    ========================================================= */
 
 /* ---- Knobs ---- */
@@ -10,6 +12,9 @@ const FOLDS  = 11;     // lumps along the curtain's leading edge
 const SEED   = 11;     // change for a different arrangement
 const SMOOTH = 0.22;   // scroll follow: higher = snappier (style guide wants crisp)
 const LAVA_SPEED = 0.022; // ambient drift when you're not scrolling
+const STARS  = 170;    // starfield points around the system
+const MOUSE_TILT = 0.2;   // how far the mouse swings the camera (radians)
+const MOUSE_SMOOTH = 0.06;
 
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -26,7 +31,8 @@ const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 const ease = t => 1 - Math.pow(1 - t, 4);            // fast-out, no float
 const smooth = t => t * t * (3 - 2 * t);
-const { sin, cos } = Math;
+const { sin, cos, PI } = Math;
+const TAU = PI * 2;
 
 /* ---- Ticker ---- */
 // Flavour items alternate Chinese / Cyrillic, with neutral serials between
@@ -59,35 +65,174 @@ const folds = Array.from({ length: FOLDS }, () => shape());
 const lumps = Array.from({ length: 8 }, () => shape());
 const drips = Array.from({ length: DRIPS }, () => ({ el: shape(), s: [rand(), rand(), rand(), rand()] }));
 
-/* ---- Planet system (the bubbles-page motif) ----
-   Lives in the ink layer, so it shows white on volt and volt on the curtain. */
-const NS = "http://www.w3.org/2000/svg";
-const planetsSvg = document.getElementById("planets");
-const svgEl = (tag, attrs) => {
-  const e = document.createElementNS(NS, tag);
-  for (const k in attrs) e.setAttribute(k, attrs[k]);
-  planetsSvg.append(e);
-  return e;
-};
-const orbit  = svgEl("circle",  { fill: "none", stroke: "currentColor", "stroke-width": 1.5, "stroke-dasharray": "2 6" });
-const planet = svgEl("circle",  { fill: "currentColor" });
-const ring   = svgEl("ellipse", { fill: "none", stroke: "currentColor", "stroke-width": 2 });
-const SATS = 12;
-const sats = Array.from({ length: SATS }, (_, i) => {
-  const type = i % 4;                       // 0 filled · 1 outline · 2 filled + number · 3 dashed
-  const filled = type === 0 || type === 2;
-  const c = svgEl("circle", {
-    fill: filled ? "currentColor" : "none", stroke: "currentColor",
-    "stroke-width": filled ? 0 : 2, ...(type === 3 ? { "stroke-dasharray": "3 5" } : {}),
-  });
-  const label = type === 2 ? svgEl("text", {}) : null;
-  if (label) label.style.fill = "var(--mask-off)";
-  if (label) label.textContent = String(i * 3 + 1).padStart(2, "0");
-  return { c, label, s: [rand(), rand(), rand()] };
-});
-
 function place(el, x, y, rx, ry = rx) {
   el.style.transform = `translate(${x - 50}px, ${y - 50}px) scale(${rx / 50}, ${ry / 50})`;
+}
+
+/* =========================================================
+   3D WIREFRAME SOLAR SYSTEM
+   World units: the sun is ~0.6 across, the outer orbit is 6.
+   Drawn into the ink layer SVG, so it shows white on volt and
+   volt on the curtain. Everything goes through one camera, so
+   near things slide past far things: that is the parallax.
+   ========================================================= */
+const NS = "http://www.w3.org/2000/svg";
+const planetsSvg = document.getElementById("planets");
+const mk = (tag, attrs = {}, parent = planetsSvg) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.append(e);
+  return e;
+};
+const LINE = { fill: "none", stroke: "currentColor", "stroke-linecap": "square" };
+
+/* Layers, back to front */
+const starDots  = mk("path", { fill: "currentColor" });
+const starCross = mk("path", { ...LINE, "stroke-width": 1 });
+const gridPath  = mk("path", { ...LINE, "stroke-width": 1 });
+const ORBIT_R = [1.55, 2.25, 3.0, 3.85, 4.8, 5.9];
+const orbitPaths = ORBIT_R.map((_, i) =>
+  mk("path", { ...LINE, "stroke-width": 1.5, ...(i % 2 ? { "stroke-dasharray": "2 6" } : {}) }));
+const axisPath  = mk("path", { ...LINE, "stroke-width": 1 });
+const bodyLayer = mk("g");
+
+/* Unit-sphere wireframes: parallels + meridians as 3D polylines */
+function sphereWire(lats, lons, seg) {
+  const lines = [];
+  lats.forEach(deg => {
+    const ph = deg * PI / 180, r = cos(ph), y = sin(ph), pts = [];
+    for (let k = 0; k <= seg; k++) { const a = k / seg * TAU; pts.push([r * cos(a), y, r * sin(a)]); }
+    lines.push(pts);
+  });
+  for (let i = 0; i < lons; i++) {
+    const th = i * PI / lons, pts = [];
+    for (let k = 0; k <= seg; k++) { const a = k / seg * TAU; pts.push([cos(a) * cos(th), sin(a), cos(a) * sin(th)]); }
+    lines.push(pts);
+  }
+  return lines;
+}
+const WIRE_HI = sphereWire([-60, -30, 0, 30, 60], 6, 36);
+const WIRE_LO = sphereWire([-45, 0, 45], 3, 20);
+const RING_PTS = Array.from({ length: 49 }, (_, k) => [cos(k / 48 * TAU), 0, sin(k / 48 * TAU)]);
+
+/* Sun: wireframe globe (far side dashed) around a filled core */
+const sun = { g: mk("g", {}, bodyLayer) };
+sun.back  = mk("path", { ...LINE, "stroke-width": 1, "stroke-dasharray": "1 4" }, sun.g);
+sun.core  = mk("circle", { fill: "currentColor" }, sun.g);
+sun.front = mk("path", { ...LINE, "stroke-width": 1.5 }, sun.g);
+
+/* Planets — styles cycle like the bubbles page: filled · wire · ringed · dashed */
+const PLANETS = [
+  { size: 0.16, kind: "fill",  label: "01" },
+  { size: 0.24, kind: "wire",  moon: true },
+  { size: 0.2,  kind: "fill",  ring: 2.1 },
+  { size: 0.14, kind: "dash" },
+  { size: 0.32, kind: "wire",  ring: 1.8, moon: true },
+  { size: 0.18, kind: "fill",  label: "06" },
+].map((pl, i) => {
+  const g = mk("g", {}, bodyLayer);
+  const o = {
+    ...pl, g, orbit: ORBIT_R[i],
+    phase: rand() * TAU, tilt: (rand() - 0.5) * 0.9, burst: 1.35 + rand() * 0.9,
+    speed: 0.9 / Math.pow(ORBIT_R[i], 1.5), lift: (rand() - 0.5) * 1.6,
+  };
+  if (pl.ring) o.ringBack = mk("path", { ...LINE, "stroke-width": 1, "stroke-dasharray": "1 4" }, g);
+  if (pl.kind === "wire") {
+    o.back  = mk("path", { ...LINE, "stroke-width": 1, "stroke-dasharray": "1 4" }, g);
+    o.front = mk("path", { ...LINE, "stroke-width": 1.5 }, g);
+  } else {
+    o.disc = mk("circle", pl.kind === "fill"
+      ? { fill: "currentColor" }
+      : { ...LINE, "stroke-width": 2, "stroke-dasharray": "3 5" }, g);
+  }
+  if (pl.ring) o.ringFront = mk("path", { ...LINE, "stroke-width": 2 }, g);
+  if (pl.label) { o.text = mk("text", {}, g); o.text.textContent = pl.label; o.text.style.fill = "var(--mask-off)"; }
+  if (pl.moon) o.moon = mk("circle", { fill: "currentColor" }, g);
+  return o;
+});
+
+/* Starfield: a box of points around the system, kept clear of the orbits.
+   ~1 in 7 is a ⊕-style cross, echoing the registration marks. */
+const stars = [];
+while (stars.length < STARS) {
+  const x = (rand() - 0.5) * 36, y = (rand() - 0.5) * 18, z = (rand() - 0.5) * 36;
+  if (Math.hypot(x, z) < 7.5 && Math.abs(y) < 3) continue;
+  stars.push({ x, y, z, cross: rand() < 0.14, s: 0.6 + rand() * 1.2 });
+}
+
+/* ---- Camera + projection ---- */
+const cam = { p: [0, 0, 0], f: [0, 0, -1], r: [1, 0, 0], u: [0, 1, 0], focal: 800, cx: 0, cy: 0 };
+const NEAR = 0.25;
+function setCamera(yaw, pitch, dist, target, focal, cx, cy) {
+  const [tx, ty, tz] = target;
+  const p = [tx + dist * cos(pitch) * sin(yaw), ty + dist * sin(pitch), tz + dist * cos(pitch) * cos(yaw)];
+  let f = [tx - p[0], ty - p[1], tz - p[2]];
+  const fl = Math.hypot(...f); f = f.map(v => v / fl);
+  let r = [-f[2], 0, f[0]];                       // cross(f, worldUp)
+  const rl = Math.hypot(...r) || 1; r = r.map(v => v / rl);
+  const u = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+  Object.assign(cam, { p, f, r, u, focal, cx, cy });
+}
+/* World point → [screenX, screenY, depth, pixelsPerUnit], or null behind the camera */
+function proj(x, y, z) {
+  const dx = x - cam.p[0], dy = y - cam.p[1], dz = z - cam.p[2];
+  const d = dx * cam.f[0] + dy * cam.f[1] + dz * cam.f[2];
+  if (d < NEAR) return null;
+  const s = cam.focal / d;
+  return [cam.cx + (dx * cam.r[0] + dy * cam.r[1] + dz * cam.r[2]) * s,
+          cam.cy - (dx * cam.u[0] + dy * cam.u[1] + dz * cam.u[2]) * s, d, s];
+}
+const fx = n => n.toFixed(1);
+
+/* Polyline through 3D points → path data, breaking where it goes behind the camera */
+function polyD(pts) {
+  let d = "", pen = false;
+  for (const [x, y, z] of pts) {
+    const q = proj(x, y, z);
+    if (!q) { pen = false; continue; }
+    d += (pen ? "L" : "M") + fx(q[0]) + " " + fx(q[1]);
+    pen = true;
+  }
+  return d;
+}
+
+/* Transform unit-space lines (spin about Y, tilt about Z, scale, move), project,
+   and split segments into near side (solid) and far side (dashed). */
+function wireD(lines, c, R, spin, tilt) {
+  const cs = cos(spin), ss = sin(spin), ct = cos(tilt), st = sin(tilt);
+  let front = "", back = "";
+  for (const line of lines) {
+    let prev = null, prevSide = null;
+    for (const [ux, uy, uz] of line) {
+      const ax = ux * cs - uz * ss, az = ux * ss + uz * cs;          // spin
+      const nx = ax * ct - uy * st, ny = ax * st + uy * ct, nz = az;  // tilt
+      const wx = c[0] + nx * R, wy = c[1] + ny * R, wz = c[2] + nz * R;
+      const facing = nx * (cam.p[0] - wx) + ny * (cam.p[1] - wy) + nz * (cam.p[2] - wz) > 0;
+      const q = proj(wx, wy, wz);
+      if (q && prev) {
+        const seg = "M" + fx(prev[0]) + " " + fx(prev[1]) + "L" + fx(q[0]) + " " + fx(q[1]);
+        if (facing && prevSide) front += seg; else back += seg;
+      }
+      prev = q; prevSide = facing;
+    }
+  }
+  return [front, back];
+}
+
+/* Ring around a body: split into the half in front of / behind the body centre */
+function ringD(c, R, tilt) {
+  const ct = cos(tilt), st = sin(tilt), cq = proj(...c);
+  let front = "", back = "", prev = null;
+  for (const [ux, , uz] of RING_PTS) {
+    const x = c[0] + ux * R * ct, y = c[1] + ux * R * st, z = c[2] + uz * R;
+    const q = proj(x, y, z);
+    if (q && prev && cq) {
+      const seg = "M" + fx(prev[0]) + " " + fx(prev[1]) + "L" + fx(q[0]) + " " + fx(q[1]);
+      if (q[2] < cq[2]) front += seg; else back += seg;
+    }
+    prev = q;
+  }
+  return [front, back];
 }
 
 /* Keyframes with a hold at each stage */
@@ -111,6 +256,27 @@ function resize() {
 resize();
 addEventListener("resize", resize);
 
+/* ---- Pointer parallax (mouse only; touch just uses scroll) ---- */
+let mx = 0, my = 0, tmx = 0, tmy = 0;
+if (!reduceMotion) {
+  addEventListener("pointermove", e => {
+    if (e.pointerType !== "mouse") return;
+    tmx = e.clientX / innerWidth * 2 - 1;
+    tmy = e.clientY / innerHeight * 2 - 1;
+  }, { passive: true });
+  document.documentElement.addEventListener("pointerleave", () => { tmx = 0; tmy = 0; });
+}
+
+/* HUD layers drift at different depths: [selector, px per mouse unit x, y, px over the whole scroll] */
+const DEPTHS = [
+  [".win-label, .win-label-r, .reg", 4, 3, 0],
+  [".readout",     8,   6, 0],
+  [".title-block", -16, -10, -28],
+  [".caps",        -10, -6, 0],
+  [".stage-num",   26,  14, 0],
+].flatMap(([sel, ax, ay, as]) => [...document.querySelectorAll(".window " + sel)].map(el => ({ el, ax, ay, as })));
+const gooBlur = goo;
+
 /* ---- HUD refs ---- */
 const section = document.getElementById("sequence");
 const caps = [...document.querySelectorAll(".cap")];
@@ -123,9 +289,11 @@ const forced = new URLSearchParams(location.search).get("p");
 const targetProgress = () => forced !== null ? clamp(+forced) : clamp(-section.getBoundingClientRect().top / (section.offsetHeight - innerHeight));
 let progress = targetProgress();
 let currentStage = -1;
+let bodyOrder = "";
 
 function frame(now) {
   progress += (targetProgress() - progress) * (reduceMotion ? 1 : SMOOTH);
+  mx += (tmx - mx) * MOUSE_SMOOTH; my += (tmy - my) * MOUSE_SMOOTH;
   const p = progress;
   const t = reduceMotion ? 0 : now / 1000;
 
@@ -164,35 +332,108 @@ function frame(now) {
     place(d.el, x, y, r * (1 - 0.12 * u), r * (1 + 0.3 * u));
   });
 
-  /* Planets: orbit near the curtain edge, swell through Draw and Flood,
-     then collapse to a full stop as the satellites burst outward on Fall */
+  /* ---- Camera: one move per stage ----
+     Signal: far and oblique · Draw: swings round and closes in ·
+     Flood: climbs overhead · Fall: dives to the orbital plane as the system bursts */
   const S4 = [0, 1/3, 2/3, 1];
   const k4 = vals => keyed(p, S4.map((s, i) => [s, vals[i]]));
-  const pcx = W * k4([0.7, 0.66, 0.62, 0.5]);
-  const pcy = H * k4([0.44, 0.5, 0.5, 0.5]);
-  const pr  = VMIN * k4([5, 9, 15, 1.4]);
-  const orbitR = VMIN * k4([20, 28, 36, 36]);
-  const burst = fall;                              // 0 → 1 on the last stage
-  planet.setAttribute("cx", pcx); planet.setAttribute("cy", pcy); planet.setAttribute("r", pr);
-  ring.setAttribute("cx", pcx); ring.setAttribute("cy", pcy);
-  ring.setAttribute("rx", pr * 2.1); ring.setAttribute("ry", pr * 0.45);
-  ring.setAttribute("transform", `rotate(-18 ${pcx} ${pcy})`);
-  ring.style.opacity = 1 - burst;
-  orbit.setAttribute("cx", pcx); orbit.setAttribute("cy", pcy); orbit.setAttribute("r", orbitR);
-  orbit.style.opacity = 1 - burst;
-  const diag = Math.hypot(W, H);
-  sats.forEach(({ c, label, s: [, b, sz] }, i) => {
-    const ang = (i / SATS) * Math.PI * 2 + t * 0.12 + p * Math.PI * 2;
-    const R = lerp(orbitR, diag * (0.35 + 0.35 * b), burst);
-    const r = VMIN * (1.2 + 2 * sz) * k4([1, 1.3, 1.5, 3.5]);
-    const x = pcx + Math.cos(ang) * R, y = pcy + Math.sin(ang) * R * 0.92;
-    c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
-    if (label) {
-      label.setAttribute("x", x); label.setAttribute("y", y);
-      label.style.fontSize = Math.max(8, r * 0.7) + "px";
-      label.style.opacity = r > 14 ? 1 : 0;
+  const narrow = W < 700;
+  const yaw   = k4([-0.55, 0.5, 1.5, 2.6]) + t * 0.025 + mx * MOUSE_TILT;
+  const pitch = clamp(k4([0.36, 0.55, 1.1, 0.16]) + my * MOUSE_TILT * 0.6, -0.4, 1.35);
+  const dist  = k4([14, 10.5, 8.5, 7.5]) * (narrow ? 1.35 : 1);
+  const focal = Math.min(W, H) * 1.05;
+  const anchorX = W * (narrow ? k4([0.55, 0.5, 0.5, 0.5]) : k4([0.66, 0.6, 0.52, 0.5]));
+  const anchorY = H * k4([0.5, 0.5, 0.48, 0.52]);
+  setCamera(yaw, pitch, dist, [0, 0, 0], focal, anchorX, anchorY);
+  const burst = fall;
+
+  /* Starfield */
+  let dots = "", crosses = "";
+  for (const s of stars) {
+    const q = proj(s.x, s.y, s.z);
+    if (!q || q[0] < -20 || q[0] > W + 20 || q[1] < -20 || q[1] > H + 20) continue;
+    if (s.cross) {
+      const a = clamp(q[3] * 0.09 * s.s, 2.5, 9);
+      crosses += `M${fx(q[0] - a)} ${fx(q[1])}h${fx(a * 2)}M${fx(q[0])} ${fx(q[1] - a)}v${fx(a * 2)}`;
+    } else {
+      const r = clamp(q[3] * 0.018 * s.s, 0.6, 3.2);
+      dots += `M${fx(q[0] - r)} ${fx(q[1])}a${fx(r)} ${fx(r)} 0 1 0 ${fx(r * 2)} 0a${fx(r)} ${fx(r)} 0 1 0 ${fx(-r * 2)} 0`;
+    }
+  }
+  starDots.setAttribute("d", dots);
+  starCross.setAttribute("d", crosses);
+
+  /* Polar grid on the orbital plane: radial spokes + vertical axis */
+  const spread = lerp(1, 1.6, burst);
+  let grid = "";
+  for (let i = 0; i < 16; i++) {
+    const a = i / 16 * TAU, r0 = 0.95, r1 = (i % 4 ? 6.4 : 7.4) * spread;
+    grid += polyD([[cos(a) * r0, 0, sin(a) * r0], [cos(a) * r1, 0, sin(a) * r1]]);
+  }
+  gridPath.setAttribute("d", grid);
+  gridPath.style.opacity = 1 - burst * 0.4;
+  axisPath.setAttribute("d", polyD([[0, -2.6, 0], [0, -0.75, 0]]) + polyD([[0, 0.75, 0], [0, 2.6, 0]]) +
+    [-2, -1.5, 1.5, 2].map(y => polyD([[-0.12, y, 0], [0.12, y, 0]])).join(""));
+  axisPath.style.opacity = 1 - burst * 0.6;
+
+  orbitPaths.forEach((el, i) => {
+    const R = ORBIT_R[i] * lerp(1, PLANETS[i].burst, burst);
+    el.setAttribute("d", polyD(Array.from({ length: 97 }, (_, k) => [cos(k / 96 * TAU) * R, 0, sin(k / 96 * TAU) * R])));
+    el.style.opacity = 1 - burst * 0.3;
+  });
+
+  /* Sun: swells through Draw and Flood, collapses to a full stop on Fall */
+  const sunR = k4([0.55, 0.75, 1.05, 0.22]);
+  const [sf, sb] = wireD(WIRE_HI, [0, 0, 0], sunR, t * 0.15 + p * PI, 0.4);
+  sun.front.setAttribute("d", sf); sun.back.setAttribute("d", sb);
+  const sq = proj(0, 0, 0);
+  if (sq) {
+    sun.core.setAttribute("cx", sq[0]); sun.core.setAttribute("cy", sq[1]);
+    sun.core.setAttribute("r", sunR * sq[3] * lerp(0.42, 1, burst));
+  }
+  const depths = [[sq ? sq[2] : 0, sun.g]];
+
+  /* Planets */
+  PLANETS.forEach(pl => {
+    const ang = pl.phase + t * pl.speed * 0.25 + p * pl.speed * 5;
+    const R = pl.orbit * lerp(1, pl.burst, burst);
+    const c = [cos(ang) * R, pl.lift * burst, sin(ang) * R];
+    const size = pl.size * lerp(1, 1.7, burst);
+    const q = proj(...c);
+    pl.g.style.display = q ? "" : "none";
+    if (!q) return;
+    depths.push([q[2], pl.g]);
+    const rpx = size * q[3];
+    if (pl.front) {
+      const [f, b] = wireD(rpx > 18 ? WIRE_HI : WIRE_LO, c, size, t * 0.6 + ang, pl.tilt);
+      pl.front.setAttribute("d", f); pl.back.setAttribute("d", b);
+    } else {
+      pl.disc.setAttribute("cx", q[0]); pl.disc.setAttribute("cy", q[1]); pl.disc.setAttribute("r", rpx);
+    }
+    if (pl.ring) {
+      const [f, b] = ringD(c, size * pl.ring, pl.tilt);
+      pl.ringFront.setAttribute("d", f); pl.ringBack.setAttribute("d", b);
+    }
+    if (pl.text) {
+      pl.text.setAttribute("x", q[0]); pl.text.setAttribute("y", q[1]);
+      pl.text.style.fontSize = Math.max(8, rpx * 0.75) + "px";
+      pl.text.style.opacity = rpx > 11 ? 1 : 0;
+    }
+    if (pl.moon) {
+      const ma = t * 0.9 + ang * 3, mr = size * 2.6;
+      const mq = proj(c[0] + cos(ma) * mr, c[1] + sin(ma) * mr * 0.3, c[2] + sin(ma) * mr);
+      if (mq) { pl.moon.setAttribute("cx", mq[0]); pl.moon.setAttribute("cy", mq[1]); pl.moon.setAttribute("r", Math.max(1.5, size * 0.28 * mq[3])); }
     }
   });
+
+  /* Painter's order: farthest body first */
+  depths.sort((a, b) => b[0] - a[0]);
+  const order = depths.map(d => PLANETS.findIndex(pl => pl.g === d[1])).join();
+  if (order !== bodyOrder) { bodyOrder = order; depths.forEach(([, g]) => bodyLayer.append(g)); }
+
+  /* Flat layers drift at their own depths; the curtain sits nearest */
+  DEPTHS.forEach(({ el, ax, ay, as }) => { el.style.translate = `${fx(mx * ax)}px ${fx(my * ay + p * as)}px`; });
+  gooBlur.style.translate = `${fx(mx * -22)}px ${fx(my * -14)}px`;
 
   /* HUD — captions switch as hard cuts, not fades */
   const stage = Math.round(p * 3);
@@ -203,9 +444,12 @@ function frame(now) {
     seqCounter.textContent = `SEQ 0${stage + 1}/04`;
   }
   navProgress.style.transform = `scaleX(${p})`;
+  const deg = v => String(Math.round((((v * 180 / PI) % 360) + 360) % 360)).padStart(3, "0");
   readout.innerHTML =
     `COVER ${String(Math.round(clamp(cover / 1.5) * 100)).padStart(3, "0")}%<br>` +
     `DESCENT ${String(Math.round(fall * 100)).padStart(3, "0")}%<br>` +
+    `CAM ${deg(yaw)}° / ALT ${deg(pitch)}°<br>` +
+    `RANGE ${dist.toFixed(2)} AU<br>` +
     `VISC 0.${81 + Math.round(sin(t) * 3)}`;
 
   requestAnimationFrame(frame);

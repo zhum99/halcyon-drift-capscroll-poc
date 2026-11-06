@@ -21,8 +21,9 @@
   position: absolute; top: var(--nav-h); left: 0; right: 0; bottom: 0;
   overflow: hidden; isolation: isolate; background: var(--mask-off);
 }
-.stage { --foot-h: 40px; } /* livery (12) + ticker (28) overlaid on the window's bottom edge */
-.stage-foot { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; }
+.stage { --foot-h: 28px; } /* ticker strip along the window's bottom edge */
+/* No background: the text alone scrolls, and the difference blend flips it pink/paper */
+.ink .ticker { position: absolute; left: 0; right: 0; bottom: 0; background: none; color: var(--mask-on); }
 
 /* Window labels now live inside the field (top corners) */
 .win-label { position: absolute; top: var(--s-3); left: calc(var(--s-3) + 24px); }
@@ -60,8 +61,7 @@
 /* Launch sequence: everything cuts in once the terminal is dismissed
    (or immediately if there's no JS / no terminal) */
 .js:not(.launched) .nav,
-.js:not(.launched) .window,
-.js:not(.launched) .stage-foot { visibility: hidden; }
+.js:not(.launched) .window { visibility: hidden; }
 .launched .nav        { animation: cut-in 240ms var(--t-cut) 0ms both; }
 .launched .title      { animation: cut-in 360ms var(--t-cut) 360ms both; }
 @keyframes cut-in {
